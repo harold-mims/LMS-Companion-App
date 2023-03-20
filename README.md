@@ -1,16 +1,13 @@
 # bluetooth_test_2
 
-A new Flutter project.
+A Flutter Application built for the LMS capstone team
 
-## Getting Started
+## How this app functions
 
-This project is a starting point for a Flutter application.
+This project is built as a companion app for the LMS- Wheelchair bedsore prevention capstone project.
 
-A few resources to get you started if this is your first Flutter project:
+The primary purpose of this app is to connect to provide the end user an easy and simple interface for controlling the hardware through a bluetooth connection. Currently the only signal needed is a target signal for the motor roller, providing a percentage of full power to be interpreted by the emdedded device.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+As this project is desiged as a proof of concept and a research platform for further development in the future, it is important that the methods used for transmiting data are adaptable so that it can be adapted to transmit pressure data without needing to be reworked.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- [Build Using Flutter_Blue_Plus](https://pub.dev/packages/flutter_blue_plus)
