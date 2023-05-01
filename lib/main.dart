@@ -38,11 +38,6 @@ class MyApp extends StatelessWidget {
             return const ConnectionScreen();
             //return BTOffScreen(btState: btState);
           }),
-      routes: {
-        //'/MainScreen': (context) => TestScreen(title: 'LMS - Companion App',),
-        //'/about': (context) => BluetoothSettingsRoute(title: 'Bluetooth Settings'),
-        //'/License': (context) => BluetoothSettingsRoute(title: 'Bluetooth Settings'),
-      },
     );
   }
 }
@@ -305,15 +300,23 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  //Timer _mvTimer;
   int _rollerValue = 50;
   late BluetoothCharacteristic serialCharacteristic;
 
 
   void _updateRoller(int sign) {
     setState(() {
-      _rollerValue += sign * 1;
+      if (sign == 1 && _rollerValue != 100 ) {
+        _rollerValue += sign * 1;
+        _sendRollerData();
+
+      }
+      else if (sign == -1 && _rollerValue!= 0) {
+        _rollerValue += sign * 1;
+        _sendRollerData();
+      }
     });
-    _sendRollerData();
   }
 
   Future<void> _sendRollerData() async {
@@ -330,14 +333,14 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _findServices() async {
     List<BluetoothService> services = await widget.device.discoverServices();
     services.forEach((service) {
-      print('service UUID');
-      print(get16BitUUID(service.uuid));
+      //print('service UUID');
+      //print(get16BitUUID(service.uuid));
       for(BluetoothCharacteristic c in service.characteristics){
-        print('Characteristic');
-        print(get16BitUUID(c.uuid));
+        //print('Characteristic');
+        //print(get16BitUUID(c.uuid));
 
         if(get16BitUUID(c.uuid) == "ffe1"){
-          print("IO found");
+          //print("IO found");
           serialCharacteristic = c;
         }
       }
@@ -378,7 +381,7 @@ class _MainScreenState extends State<MainScreen> {
                 _updateRoller(1);
               },
             ),
-            Text('$_rollerValue',
+            Text('$_rollerValue %',
                 style: Theme.of(context)
                     .textTheme
                     .displayLarge
@@ -391,6 +394,9 @@ class _MainScreenState extends State<MainScreen> {
               ),
               onPressed: () {
                 _updateRoller(-1);
+              },
+              onLongPress: () {
+                _updateRoller(1);
               },
             ),
           ],
@@ -431,14 +437,14 @@ class _TestScreenState extends State<TestScreen> {
   Future<void> _findServices() async {
     List<BluetoothService> services = await widget.device.discoverServices();
     services.forEach((service) {
-      print('service UUID');
-      print(get16BitUUID(service.uuid));
+      //print('service UUID');
+      //print(get16BitUUID(service.uuid));
       for(BluetoothCharacteristic c in service.characteristics){
-        print('Characteristic');
-        print(get16BitUUID(c.uuid));
+        //print('Characteristic');
+        //print(get16BitUUID(c.uuid));
 
         if(get16BitUUID(c.uuid) == "ffe1"){
-          print("IO found");
+          //print("IO found");
           serialCharacteristic = c;
         }
       }
