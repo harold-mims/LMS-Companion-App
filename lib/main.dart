@@ -163,7 +163,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                                           context, '/MainScreen');
                                           */
                                       Navigator.pushReplacement(context,
-                                              MaterialPageRoute (builder: (context) {return TestScreen(
+                                              MaterialPageRoute (builder: (context) {return MainScreen(
                                                 title: 'lms',
                                                 device:device
                                               );})
@@ -224,58 +224,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                     ))
           ],
         ),
-        /*
-          children: <Widget>[
-              StreamBuilder<List<BluetoothDevice>>(
-                stream: Stream.periodic(const Duration(seconds: 2))
-                    .asyncMap((_) => FlutterBluePlus.instance.connectedDevices),
-                initialData: const [],
-                builder: (c, snapshot) => Column(
-                  children: snapshot.data!
-                      .map((d) => ListTile(
-                            title: Text(d.name),
-                            subtitle: Text(d.id.toString()),
-                            trailing: StreamBuilder<BluetoothDeviceState>(
-                              stream: d.state,
-                              initialData: BluetoothDeviceState.disconnected,
-                              builder: (c, snapshot) {
-                                if (snapshot.data ==
-                                    BluetoothDeviceState.connected) {
-                                  return ElevatedButton(
-                                    child: const Text('OPEN'),
-                                    onPressed: () => {} /*Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                DeviceScreen(device: d))),*/
-                                  );
-                                }
-                                return Text(snapshot.data.toString());
-                              },
-                            ),
-                          ))
-                      .toList(),
-                ),
-              ),
-             
-              StreamBuilder<List<ScanResult>>(
-                stream: FlutterBluePlus.instance.scanResults,
-                initialData: const [],
-                builder: (c, snapshot) => Column(
-                  children: snapshot.data!
-                      .map(
-                        (r) => ScanResultTile(
-                          result: r,
-                          onTap: () => {} /*Navigator.of(context)
-                              .push(MaterialPageRoute(builder: (context) {
-                            r.device.connect();
-                            return DeviceScreen(device: r.device);
-                          })),*/
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-            */
+        
       ),
     );
     /*
@@ -301,6 +250,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   //Timer _mvTimer;
+  bool _motorOn = false;
   int _rollerValue = 50;
   late BluetoothCharacteristic serialCharacteristic;
 
@@ -324,6 +274,11 @@ class _MainScreenState extends State<MainScreen> {
     await serialCharacteristic.write('\x01R$_rollerValue\x00'.codeUnits);
     print('\x01R$_rollerValue\x00');
     //await serialCharacteristic.write([98]);
+  }
+
+  Future<void> _sendMotorOn() async {
+    await serialCharacteristic.write('\x01C$_motorOn\x00'.codeUnits);
+    print('\x01C$_motorOn\x00');
   }
   
   String get16BitUUID(inputguid) {
@@ -366,7 +321,7 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
-            Text('Motor Value',
+            Text('Motor Speed',
                 style: Theme.of(context)
                     .textTheme
                     .displaySmall
@@ -395,10 +350,30 @@ class _MainScreenState extends State<MainScreen> {
               onPressed: () {
                 _updateRoller(-1);
               },
-              onLongPress: () {
-                _updateRoller(1);
-              },
             ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text('Motor Power',
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineMedium
+                    ?.apply(fontWeightDelta: 1)),
+                Transform.scale(scale: 2.5,
+                  child: Switch(
+                    value: _motorOn,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _motorOn = value;
+                        _sendMotorOn();
+                      });
+                    },
+                  ),
+                ),
+              ],),
+
+            
           ],
         ),
       ),
@@ -407,147 +382,6 @@ class _MainScreenState extends State<MainScreen> {
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ),*/ // This trailing comma makes auto-formatting nicer for build methods.
-    );
-  }
-}
-
-class TestScreen extends StatefulWidget {
-  const TestScreen({super.key, required this.title, required this.device});
-  final String title;
-  final BluetoothDevice device;
-
-  @override
-  State<TestScreen> createState() => _TestScreenState();
-}
-
-class _TestScreenState extends State<TestScreen> {
-  bool _ledState = false;
-  late BluetoothCharacteristic serialCharacteristic;
-
-  void _incrementCounter() {
-    setState(() {
-      _ledState = !_ledState;
-    });
-  }
-
-  String get16BitUUID(inputguid) {
-    return inputguid.toString().substring(4,8);
-  }
-
-  Future<void> _findServices() async {
-    List<BluetoothService> services = await widget.device.discoverServices();
-    services.forEach((service) {
-      //print('service UUID');
-      //print(get16BitUUID(service.uuid));
-      for(BluetoothCharacteristic c in service.characteristics){
-        //print('Characteristic');
-        //print(get16BitUUID(c.uuid));
-
-        if(get16BitUUID(c.uuid) == "ffe1"){
-          //print("IO found");
-          serialCharacteristic = c;
-        }
-      }
-
-    });
-  }
-
-  Future<void> _blinkLED() async {
-    //await serialCharacteristic.write([0x62]);
-    await serialCharacteristic.write('\x01R0\x00'.codeUnits);
-    //await serialCharacteristic.write([98]);
-  }
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    WidgetsBinding.instance?.addPostFrameCallback((_) {
-      // do something
-      Future.delayed(const Duration(milliseconds: 1000), () {_findServices();});
-    });
-  }
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'Press to illuminate the LED on the MSP430',
-            ),
-            Text(
-              '$_ledState',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            ElevatedButton(
-              child: const Text('Get Services'),
-              onPressed: () {
-                _findServices();
-              },
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _blinkLED,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
-  }
-}
-
-class BluetoothSettingsRoute extends StatefulWidget {
-  BluetoothSettingsRoute({super.key, required this.title});
-  final String title;
-  final FlutterBluePlus flutterBlue = FlutterBluePlus.instance;
-  final List<BluetoothDevice> devicesList = <BluetoothDevice>[];
-
-  @override
-  State<BluetoothSettingsRoute> createState() => _BluetoothSettingsRouteState();
-}
-
-class _BluetoothSettingsRouteState extends State<BluetoothSettingsRoute> {
-  void _scanDevices() {
-    //do Something
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'Welcome to the Bluetooth Settings Page',
-            ),
-            Text(
-              'test',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-            ElevatedButton(
-              child: const Text('Return To HomePage'),
-              onPressed: () {
-                // Navigate to second screen When Pressed
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _scanDevices,
-        tooltip: 'Increment',
-        child: const Icon(Icons.search),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
