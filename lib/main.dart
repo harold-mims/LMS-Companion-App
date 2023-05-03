@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 void main() {
@@ -88,8 +89,8 @@ class _BTOffScreenState extends State<BTOffScreen> {
                 padding: const EdgeInsets.all(30),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.all(30),
-                    backgroundColor: Colors.green[400]),
+                      padding: const EdgeInsets.all(30),
+                      backgroundColor: Colors.green[400]),
                   child: Text('Turn On Bluetooth',
                       style: Theme.of(context)
                           .textTheme
@@ -158,16 +159,11 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                                 return ElevatedButton(
                                     child: const Text('OPEN'),
                                     onPressed: () async {
-                                      /*
-                                      Navigator.pushReplacementNamed(
-                                          context, '/MainScreen');
-                                          */
-                                      Navigator.pushReplacement(context,
-                                              MaterialPageRoute (builder: (context) {return MainScreen(
-                                                title: 'lms',
-                                                device:device
-                                              );})
-                                            );
+                                      Navigator.push(context,
+                                          MaterialPageRoute(builder: (context) {
+                                        return MainScreen(
+                                            title: 'lms', device: device);
+                                      }));
                                     });
                               }
                               return Text(
@@ -201,19 +197,21 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                                           child: const Text('Connect'),
                                           onPressed: () {
                                             result.device.connect();
-                                            /*Navigator.pushReplacementNamed(
-                                                context, 
-                                                '/MainScreen',);
-                                            */
-                                            Navigator.pushReplacement(context,
-                                              MaterialPageRoute (builder: (context) {return MainScreen(
-                                                title: 'lms',
-                                                device:result.device
-                                              );})
-                                            );
-
-
                                           });
+                                    }
+                                    if (snapshot.data ==
+                                        BluetoothDeviceState.connected) {
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) =>
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                    builder: (context) {
+                                                  return MainScreen(
+                                                      title: 'lms',
+                                                      device: result.device);
+                                                }),
+                                              ));
                                     }
                                     return Text(
                                         snapshot.data.toString().substring(21));
@@ -224,18 +222,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                     ))
           ],
         ),
-        
       ),
     );
-    /*
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-
-        },
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
-       */ // This trailing comma makes auto-formatting nicer for build methods.
   }
 }
 
@@ -250,21 +238,21 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   //Timer _mvTimer;
+  bool _characteristicFound = false;
   bool _motorOn = false;
   int _rollerValue = 50;
   late BluetoothCharacteristic serialCharacteristic;
 
-
   void _updateRoller(int sign) {
     setState(() {
-      if (sign == 1 && _rollerValue != 100 ) {
-        _rollerValue += sign * 1;
-        _sendRollerData();
-
-      }
-      else if (sign == -1 && _rollerValue!= 0) {
-        _rollerValue += sign * 1;
-        _sendRollerData();
+      if (_characteristicFound) {
+        if (sign == 1 && _rollerValue != 100) {
+          _rollerValue += sign * 1;
+          _sendRollerData();
+        } else if (sign == -1 && _rollerValue != 0) {
+          _rollerValue += sign * 1;
+          _sendRollerData();
+        }
       }
     });
   }
@@ -277,12 +265,14 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _sendMotorOn() async {
-    await serialCharacteristic.write('\x01C$_motorOn\x00'.codeUnits);
-    print('\x01C$_motorOn\x00');
+    if (_characteristicFound) {
+      await serialCharacteristic.write('\x01C$_motorOn\x00'.codeUnits);
+      print('\x01C$_motorOn\x00');
+    }
   }
-  
+
   String get16BitUUID(inputguid) {
-    return inputguid.toString().substring(4,8);
+    return inputguid.toString().substring(4, 8);
   }
 
   Future<void> _findServices() async {
@@ -290,16 +280,16 @@ class _MainScreenState extends State<MainScreen> {
     services.forEach((service) {
       //print('service UUID');
       //print(get16BitUUID(service.uuid));
-      for(BluetoothCharacteristic c in service.characteristics){
+      for (BluetoothCharacteristic c in service.characteristics) {
         //print('Characteristic');
         //print(get16BitUUID(c.uuid));
 
-        if(get16BitUUID(c.uuid) == "ffe1"){
+        if (get16BitUUID(c.uuid) == "ffe1") {
           //print("IO found");
           serialCharacteristic = c;
+          _characteristicFound = true;
         }
       }
-
     });
   }
 
@@ -309,9 +299,12 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     WidgetsBinding.instance?.addPostFrameCallback((_) {
       // do something
-      Future.delayed(const Duration(milliseconds: 1000), () {_findServices();});
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        _findServices();
+      });
     });
   }
+
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -356,11 +349,12 @@ class _MainScreenState extends State<MainScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text('Motor Power',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineMedium
-                    ?.apply(fontWeightDelta: 1)),
-                Transform.scale(scale: 2.5,
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium
+                        ?.apply(fontWeightDelta: 1)),
+                Transform.scale(
+                  scale: 2.5,
                   child: Switch(
                     value: _motorOn,
                     onChanged: (bool value) {
@@ -371,17 +365,11 @@ class _MainScreenState extends State<MainScreen> {
                     },
                   ),
                 ),
-              ],),
-
-            
+              ],
+            ),
           ],
         ),
       ),
-      /*floatingActionButton: FloatingActionButton(
-        onPressed: _UpdateRoller(),
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),*/ // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
