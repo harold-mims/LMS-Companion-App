@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -165,6 +166,10 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                                             title: 'lms', device: device);
                                       }));
                                     });
+                              } else if (snapshot.data ==
+                                  BluetoothDeviceState.disconnecting) {
+                                WidgetsBinding.instance.addPostFrameCallback(
+                                    (_) => Navigator.pop(context));
                               }
                               return Text(
                                   snapshot.data.toString().substring(15));
@@ -191,14 +196,6 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                                   initialData:
                                       BluetoothDeviceState.disconnected,
                                   builder: (context, snapshot) {
-                                    if (snapshot.data !=
-                                        BluetoothDeviceState.connected) {
-                                      return ElevatedButton(
-                                          child: const Text('Connect'),
-                                          onPressed: () {
-                                            result.device.connect();
-                                          });
-                                    }
                                     if (snapshot.data ==
                                         BluetoothDeviceState.connected) {
                                       WidgetsBinding.instance
@@ -212,6 +209,17 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                                                       device: result.device);
                                                 }),
                                               ));
+                                    } else if (snapshot.data ==
+                                        BluetoothDeviceState.disconnecting) {
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback(
+                                              (_) => Navigator.pop(context));
+                                    } else {
+                                      return ElevatedButton(
+                                          child: const Text('Connect'),
+                                          onPressed: () {
+                                            result.device.connect();
+                                          });
                                     }
                                     return Text(
                                         snapshot.data.toString().substring(21));
@@ -237,7 +245,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  //Timer _mvTimer;
+  Timer? _mvTimer;
   bool _characteristicFound = false;
   bool _motorOn = false;
   int _rollerValue = 50;
@@ -245,29 +253,65 @@ class _MainScreenState extends State<MainScreen> {
 
   void _updateRoller(int sign) {
     setState(() {
-      if (_characteristicFound) {
-        if (sign == 1 && _rollerValue != 100) {
-          _rollerValue += sign * 1;
-          _sendRollerData();
-        } else if (sign == -1 && _rollerValue != 0) {
-          _rollerValue += sign * 1;
-          _sendRollerData();
-        }
+      int oldValue = _rollerValue;
+      _rollerValue += sign * 1;
+
+      if (_rollerValue > 100) {
+        _rollerValue = 100;
+      } else if (_rollerValue < 0) {
+        _rollerValue = 0;
+      }
+
+      if (_rollerValue != oldValue) {
+        _sendRollerData();
       }
     });
   }
 
+  void startMVTimer(int sign) {
+    int timerStepValue = 5;
+    int nextMultiple;
+
+    _mvTimer = Timer.periodic(const Duration(milliseconds: 500), (t) {
+      setState(() {
+        nextMultiple = _rollerValue + (sign * timerStepValue);
+        nextMultiple % timerStepValue == 0
+            ? _updateRoller(sign * timerStepValue)
+            : sign > 0
+                ? _updateRoller(
+                    (timerStepValue - _rollerValue) % timerStepValue)
+                : _updateRoller(((timerStepValue * (_rollerValue ~/ timerStepValue) - _rollerValue)));
+      });
+    });
+  }
+
+  void stopMVTimer() {
+    _mvTimer?.cancel();
+  }
+
   Future<void> _sendRollerData() async {
-    //await serialCharacteristic.write([0x62]);
-    await serialCharacteristic.write('\x01R$_rollerValue\x00'.codeUnits);
-    print('\x01R$_rollerValue\x00');
-    //await serialCharacteristic.write([98]);
+    try {
+      //await serialCharacteristic.write([0x62]);
+      await serialCharacteristic
+          .write('\x01R$_rollerValue\x00'.codeUnits)
+          .timeout(const Duration(seconds: 3));
+      print('\x01R$_rollerValue\x00');
+      //await serialCharacteristic.write([98]);
+    } catch (err) {
+      print('Caught error: $err');
+    }
   }
 
   Future<void> _sendMotorOn() async {
-    if (_characteristicFound) {
-      await serialCharacteristic.write('\x01C$_motorOn\x00'.codeUnits);
-      print('\x01C$_motorOn\x00');
+    try {
+      if (_characteristicFound) {
+        await serialCharacteristic
+            .write('\x01C$_motorOn\x00'.codeUnits)
+            .timeout(const Duration(seconds: 3));
+        print('\x01C$_motorOn\x00');
+      }
+    } catch (err) {
+      print('Caught error: $err');
     }
   }
 
@@ -320,6 +364,23 @@ class _MainScreenState extends State<MainScreen> {
                     .displaySmall
                     ?.apply(fontWeightDelta: 1)),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
+              onPressed: () {},
+              child: GestureDetector(
+                onTapDown: (_) => _updateRoller(1),
+                onLongPress: () => startMVTimer(1),
+                onLongPressUp: () => stopMVTimer(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: const Icon(
+                    Icons.arrow_drop_up,
+                    color: Colors.white,
+                    size: 100,
+                  ),
+                ),
+              ),
+            ),
+            /*ElevatedButton(
               child: const Icon(
                 Icons.arrow_drop_up,
                 color: Colors.white,
@@ -327,14 +388,32 @@ class _MainScreenState extends State<MainScreen> {
               ),
               onPressed: () {
                 _updateRoller(1);
+                startTimer();
               },
-            ),
+            ),*/
             Text('$_rollerValue %',
                 style: Theme.of(context)
                     .textTheme
                     .displayLarge
                     ?.apply(fontWeightDelta: 3)),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
+              onPressed: () {},
+              child: GestureDetector(
+                onTapDown: (_) => _updateRoller(-1),
+                onLongPress: () => startMVTimer(-1),
+                onLongPressUp: () => stopMVTimer(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: const Icon(
+                    Icons.arrow_drop_down,
+                    color: Colors.white,
+                    size: 100,
+                  ),
+                ),
+              ),
+            ),
+            /*ElevatedButton(
               child: const Icon(
                 Icons.arrow_drop_down,
                 color: Colors.white,
@@ -343,7 +422,7 @@ class _MainScreenState extends State<MainScreen> {
               onPressed: () {
                 _updateRoller(-1);
               },
-            ),
+            ),*/
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: CrossAxisAlignment.center,
