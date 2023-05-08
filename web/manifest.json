@@ -1,6 +1,6 @@
 {
-    "name": "bluetooth_test_2",
-    "short_name": "bluetooth_test_2",
+    "name": "LMS_Companion_App",
+    "short_name": "LMS_Companion_App",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

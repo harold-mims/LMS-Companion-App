@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "bluetooth_test_2",
+            "name": "LMS_Companion_App",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "bluetooth_test_2 (profile mode)",
+            "name": "LMS_Companion_App (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "bluetooth_test_2 (release mode)",
+            "name": "LMS_Companion_App (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

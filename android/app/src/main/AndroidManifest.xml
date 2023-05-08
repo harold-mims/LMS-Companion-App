@@ -1,10 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.bluetooth_test_2">
+    package="com.example.LMS_Companion_App">
     <uses-permission android:name="android.permission.BLUETOOTH" />  
 	<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />  
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/> 
     <application
-        android:label="bluetooth_test_2"
+        android:label="LMS_Companion_App"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

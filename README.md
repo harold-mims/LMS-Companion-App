@@ -1,4 +1,4 @@
-# LMS Companion App
+# LMS_Companion_App
 
 A Flutter Application built for the LMS capstone team
 

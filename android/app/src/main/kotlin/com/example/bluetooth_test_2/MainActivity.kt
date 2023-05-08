@@ -1,4 +1,4 @@
-package com.example.bluetooth_test_2
+package com.example.LMS_Companion_App
 
 import io.flutter.embedding.android.FlutterActivity
 

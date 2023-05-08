@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "bluetooth_test_2" "\0"
+            VALUE "FileDescription", "LMS_Companion_App" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "bluetooth_test_2" "\0"
+            VALUE "InternalName", "LMS_Companion_App" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2023 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "bluetooth_test_2.exe" "\0"
-            VALUE "ProductName", "bluetooth_test_2" "\0"
+            VALUE "OriginalFilename", "LMS_Companion_App.exe" "\0"
+            VALUE "ProductName", "LMS_Companion_App" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
