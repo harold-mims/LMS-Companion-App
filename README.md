@@ -1,4 +1,4 @@
-# bluetooth_test_2
+# LMS Companion App
 
 A Flutter Application built for the LMS capstone team
 
